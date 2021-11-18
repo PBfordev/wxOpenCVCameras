@@ -21,6 +21,8 @@ public:
 
     void SetCameraBitmap(const wxBitmap& bitmap, CameraPanel::Status status = CameraPanel::Receiving);
 
+    wxString GetCameraName() const { return m_cameraPanel->GetCameraName(); }
+
 private:
     bool         m_clientSizeAdjusted{false};
     CameraPanel* m_cameraPanel{nullptr};

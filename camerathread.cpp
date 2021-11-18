@@ -68,12 +68,10 @@ bool CameraThread::InitCapture()
 {
     unsigned long cameraIndex = 0;
 
-    wxDELETE(m_cameraCapture);
-
     if ( m_cameraAddress.ToCULong(&cameraIndex) )
-        m_cameraCapture = new cv::VideoCapture(cameraIndex);
+        m_cameraCapture.reset(new cv::VideoCapture(cameraIndex));
     else
-        m_cameraCapture = new cv::VideoCapture(m_cameraAddress.ToStdString());
+        m_cameraCapture.reset(new cv::VideoCapture(m_cameraAddress.ToStdString()));
 
     return m_cameraCapture->isOpened();
 }
@@ -88,10 +86,7 @@ wxThread::ExitCode CameraThread::Entry()
 
     if ( !InitCapture() )
     {
-        CameraEvent* evt = new CameraEvent(EVT_CAMERA_ERROR_OPEN, GetCameraName());
-
-        wxDELETE(m_cameraCapture);
-        m_eventSink.QueueEvent(evt);
+        m_eventSink.QueueEvent(new CameraEvent(EVT_CAMERA_ERROR_OPEN, GetCameraName()));
         return static_cast<wxThread::ExitCode>(nullptr);
     }
     else
@@ -120,9 +115,8 @@ wxThread::ExitCode CameraThread::Entry()
 
             if ( !matFrame.empty() )
             {
-                frameData->SetFrame(new wxBitmap(matFrame.cols, matFrame.rows, 24));
-
                 stopWatch.Start();
+                frameData->SetFrame(new wxBitmap(matFrame.cols, matFrame.rows, 24));
                 ConvertMatBitmapTowxBitmap(matFrame, *frameData->GetFrame());
                 frameData->SetTimeToConvert(stopWatch.Time());
 
@@ -130,8 +124,8 @@ wxThread::ExitCode CameraThread::Entry()
                 {
                     cv::Mat matThumbnail;
 
-                    frameData->SetThumbnail(new wxBitmap(m_thumbnailSize, 24));
                     stopWatch.Start();
+                    frameData->SetThumbnail(new wxBitmap(m_thumbnailSize, 24));
                     cv::resize(matFrame, matThumbnail, cv::Size(m_thumbnailSize.GetWidth(), m_thumbnailSize.GetHeight()));
                     ConvertMatBitmapTowxBitmap(matThumbnail, *frameData->GetThumbnail());
                     frameData->SetTimeToCreateThumbnail(stopWatch.Time());
@@ -154,7 +148,6 @@ wxThread::ExitCode CameraThread::Entry()
             else // connection to camera lost
             {
                 m_isCapturing = false;
-
                 m_eventSink.QueueEvent(new CameraEvent(EVT_CAMERA_ERROR_EMPTY, GetCameraName()));
                 break;
             }
@@ -181,7 +174,6 @@ wxThread::ExitCode CameraThread::Entry()
         }
     }
 
-    wxDELETE(m_cameraCapture);
     wxLogTrace(TRACE_WXOPENCVCAMERAS, "Exiting CameraThread for camera '%s'...", GetCameraName());
     return static_cast<wxThread::ExitCode>(nullptr);
 }

@@ -57,10 +57,9 @@ wxDECLARE_EVENT(EVT_CAMERA_ERROR_EXCEPTION, CameraEvent);
 
 
 
-
 /***********************************************************************************************
 
-    CameraFrameData: a structure containing information about a captured camera frame,
+    CameraFrameData: a class containing information about a captured camera frame,
                      created in a camera thread and processed in the GUI thread
 
 ***********************************************************************************************/
@@ -121,7 +120,7 @@ private:
 };
 
 typedef std::unique_ptr<CameraFrameData> CameraFrameDataPtr;
-typedef std::vector<CameraFrameDataPtr> CameraFrameDataVector;
+typedef std::vector<CameraFrameDataPtr>  CameraFrameDataVector;
 
 
 /***********************************************************************************************
@@ -148,15 +147,15 @@ public:
     wxString GetCameraName() const    { return m_cameraName; }
     bool     IsCapturing() const      { return m_isCapturing; }
 protected:
-    wxString               m_cameraAddress;
-    wxString               m_cameraName;
-    wxEvtHandler&          m_eventSink;
-    CameraFrameDataVector& m_frames;
-    wxCriticalSection&     m_framesCS;
-    long                   m_sleepTime{0};
-    cv::VideoCapture*      m_cameraCapture{nullptr};
-    wxSize                 m_thumbnailSize;
-    std::atomic_bool       m_isCapturing{false};
+    wxString                          m_cameraAddress;
+    wxString                          m_cameraName;
+    wxEvtHandler&                     m_eventSink;
+    CameraFrameDataVector&            m_frames;
+    wxCriticalSection&                m_framesCS;
+    long                              m_sleepTime{0};
+    std::unique_ptr<cv::VideoCapture> m_cameraCapture;
+    wxSize                            m_thumbnailSize;
+    std::atomic_bool                  m_isCapturing{false};
 
     bool     InitCapture();
     ExitCode Entry() override;

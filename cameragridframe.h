@@ -28,7 +28,9 @@ public:
 private:
     enum
     {
-        ID_ADD_ALL_KNOWN_CAMERAS = wxID_HIGHEST + 1
+        ID_CAMERA_ADD_ALL_KNOWN = wxID_HIGHEST + 1,
+        ID_CAMERA_REMOVE,
+        ID_CAMERA_REMOVE_ALL
     };
 
     struct CameraView
@@ -37,7 +39,8 @@ private:
         CameraPanel*  thumbnailPanel{nullptr};
     };
 
-    // timer interval for processing new camera frame data from worker threads
+    // default timer interval in ms for processing new camera frame data from worker threads
+    // see m_processNewCameraFrameDataInterval
     static const long ms_defaultProcessNewCameraFrameDataInterval = 30;
 
     // camera name to CameraView
@@ -64,6 +67,8 @@ private:
     void OnCameraErrorOpen(CameraEvent& evt);
     void OnCameraErrorEmpty(CameraEvent& evt);
     void OnCameraErrorException(CameraEvent& evt);
+
+    void ShowErrorForCamera(const wxString& cameraName);
 
     CameraPanel*    FindThumbnailPanelForCamera(const wxString& cameraName) const;
     OneCameraFrame* FindOneCameraFrameForCamera(const wxString& cameraName) const;

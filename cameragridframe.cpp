@@ -20,7 +20,7 @@
 #include "convertmattowxbmp.h"
 #include "onecameraframe.h"
 
-// some/most are time limited
+// some/most are time-limited
 const char* const knownCameraAdresses[] =
 {
     "http://pendelcam.kip.uni-heidelberg.de/mjpg/video.mjpg",
@@ -36,17 +36,17 @@ CameraGridFrame::CameraGridFrame(wxWindow* parent) : wxFrame(parent, wxID_ANY, "
     wxMenu*    cameraMenu = new wxMenu;
     wxMenuBar* menuBar = new wxMenuBar();
 
-    cameraMenu->Append(wxID_NEW, "&Add...");
+    cameraMenu->Append(wxID_NEW,   "&Add...");
     cameraMenu->Append(wxID_FILE1, "Add Pendulum");
     cameraMenu->Append(wxID_FILE2, "Add Bunny 1");
     cameraMenu->Append(wxID_FILE3, "Add Bunny 2");
     cameraMenu->Append(wxID_FILE4, "Add Apple Stream");
     cameraMenu->Append(wxID_FILE5, "Add BBC World");
     cameraMenu->Append(wxID_FILE6, "Add ABC Live");
-    cameraMenu->Append(ID_ADD_ALL_KNOWN_CAMERAS, "Add All Known Cameras");
+    cameraMenu->Append(ID_CAMERA_ADD_ALL_KNOWN, "Add All Known Cameras");
     cameraMenu->AppendSeparator();
-    cameraMenu->Append(wxID_DELETE, "&Remove...");
-    cameraMenu->Append(wxID_CLOSE_ALL, "Remove &All");
+    cameraMenu->Append(ID_CAMERA_REMOVE, "&Remove...");
+    cameraMenu->Append(ID_CAMERA_REMOVE_ALL, "Remove &All");
 
     menuBar->Append(cameraMenu, "&Camera");
     SetMenuBar(menuBar);
@@ -62,10 +62,10 @@ CameraGridFrame::CameraGridFrame(wxWindow* parent) : wxFrame(parent, wxID_ANY, "
     Bind(wxEVT_MENU, [this](wxCommandEvent&) { AddCamera(knownCameraAdresses[3]); }, wxID_FILE4);
     Bind(wxEVT_MENU, [this](wxCommandEvent&) { AddCamera(knownCameraAdresses[4]); }, wxID_FILE5);
     Bind(wxEVT_MENU, [this](wxCommandEvent&) { AddCamera(knownCameraAdresses[5]); }, wxID_FILE6);
-    Bind(wxEVT_MENU, &CameraGridFrame::OnAddAllKnownCameras, this, ID_ADD_ALL_KNOWN_CAMERAS);
+    Bind(wxEVT_MENU, &CameraGridFrame::OnAddAllKnownCameras, this, ID_CAMERA_ADD_ALL_KNOWN);
 
-    Bind(wxEVT_MENU, &CameraGridFrame::OnRemoveCamera, this, wxID_DELETE);
-    Bind(wxEVT_MENU, &CameraGridFrame::OnRemoveAllCameras, this, wxID_CLOSE_ALL);
+    Bind(wxEVT_MENU, &CameraGridFrame::OnRemoveCamera, this, ID_CAMERA_REMOVE);
+    Bind(wxEVT_MENU, &CameraGridFrame::OnRemoveAllCameras, this, ID_CAMERA_REMOVE_ALL);
 
     m_processNewCameraFrameDataTimer.Start(m_processNewCameraFrameDataInterval);
     m_processNewCameraFrameDataTimer.Bind(wxEVT_TIMER, &CameraGridFrame::OnProcessNewCameraFrameData, this);
@@ -276,7 +276,7 @@ void CameraGridFrame::OnProcessNewCameraFrameData(wxTimerEvent&)
 #endif
     }
 
-    wxLogTrace(TRACE_WXOPENCVCAMERAS, "Processed %zu new frames in %ld ms.", frameData.size(), stopWatch.Time());
+    wxLogTrace(TRACE_WXOPENCVCAMERAS, "Processed %zu new camera frames in %ld ms.", frameData.size(), stopWatch.Time());
     frameData.clear();
 }
 
@@ -287,42 +287,39 @@ void CameraGridFrame::OnCameraCaptureStarted(CameraEvent& evt)
 
 void CameraGridFrame::OnCameraErrorOpen(CameraEvent& evt)
 {
-    CameraPanel* cameraPanel = FindThumbnailPanelForCamera(evt.GetCameraName());
+    const wxString cameraName = evt.GetCameraName();
 
-    if ( cameraPanel )
-        cameraPanel->SetBitmap(wxBitmap(), CameraPanel::Error);
-
-    wxLogError("Could not open camera '%s'.",  evt.GetCameraName());
+    ShowErrorForCamera(cameraName);
+    wxLogError("Could not open camera '%s'.",  cameraName);
 }
 
 void CameraGridFrame::OnCameraErrorEmpty(CameraEvent& evt)
 {
-    CameraPanel* cameraPanel = FindThumbnailPanelForCamera(evt.GetCameraName());
+    const wxString cameraName = evt.GetCameraName();
 
-    if ( cameraPanel )
-        cameraPanel->SetBitmap(wxBitmap(), CameraPanel::Error);
-
-    OneCameraFrame* ocFrame = FindOneCameraFrameForCamera(evt.GetCameraName());
-
-    if ( ocFrame )
-        ocFrame->SetCameraBitmap(wxBitmap(), CameraPanel::Error);
-
-    wxLogError("Connection to camera '%s' lost.", evt.GetCameraName());
+    ShowErrorForCamera(cameraName);
+    wxLogError("Connection to camera '%s' lost.", cameraName);
 }
 
 void CameraGridFrame::OnCameraErrorException(CameraEvent& evt)
 {
-    CameraPanel* cameraPanel = FindThumbnailPanelForCamera(evt.GetCameraName());
+    const wxString cameraName = evt.GetCameraName();
+
+    ShowErrorForCamera(cameraName);
+    wxLogError("Exception in camera '%s': %s", cameraName, evt.GetString());
+}
+
+void CameraGridFrame::ShowErrorForCamera(const wxString& cameraName)
+{
+    CameraPanel* cameraPanel = FindThumbnailPanelForCamera(cameraName);
 
     if ( cameraPanel )
         cameraPanel->SetBitmap(wxBitmap(), CameraPanel::Error);
 
-    OneCameraFrame* ocFrame = FindOneCameraFrameForCamera(evt.GetCameraName());
+    OneCameraFrame* ocFrame = FindOneCameraFrameForCamera(cameraName);
 
     if ( ocFrame )
         ocFrame->SetCameraBitmap(wxBitmap(), CameraPanel::Error);
-
-    wxLogError("Exception in camera '%s': %s", evt.GetCameraName(), evt.GetString());
 }
 
 CameraPanel* CameraGridFrame::FindThumbnailPanelForCamera(const wxString& cameraName) const
@@ -346,7 +343,7 @@ OneCameraFrame* CameraGridFrame::FindOneCameraFrameForCamera(const wxString& cam
         if ( !ocFrame )
             continue;
 
-        if ( ocFrame->GetTitle().IsSameAs(cameraName) )
+        if ( ocFrame->GetCameraName().IsSameAs(cameraName) )
             return ocFrame;
     }
 
