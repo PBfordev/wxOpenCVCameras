@@ -314,7 +314,7 @@ void CameraGridFrame::OnProcessNewCameraFrameData(wxTimerEvent&)
 
 void CameraGridFrame::OnCameraCaptureStarted(CameraEvent& evt)
 {
-    wxLogTrace(TRACE_WXOPENCVCAMERAS, "Started capturing from camera '%s' (%s fps, address '%s')'.",
+    wxLogTrace(TRACE_WXOPENCVCAMERAS, "Started capturing from camera '%s' (fps: %s, backend: %s)'.",
         evt.GetCameraName(),
         evt.GetInt() ? wxString::Format("%d", evt.GetInt()) : "n/a",
         evt.GetString());

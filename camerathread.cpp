@@ -94,7 +94,7 @@ wxThread::ExitCode CameraThread::Entry()
     {
         CameraEvent* evt = new CameraEvent(EVT_CAMERA_CAPTURE_STARTED, GetCameraName());
 
-        evt->SetString(m_cameraAddress);
+        evt->SetString(wxString(m_cameraCapture->getBackendName()));
         evt->SetInt(m_cameraCapture->get(static_cast<int>(cv::CAP_PROP_FPS)));
         m_eventSink.QueueEvent(evt);
     }
