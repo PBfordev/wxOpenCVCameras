@@ -127,8 +127,8 @@ typedef std::vector<CameraFrameDataPtr>  CameraFrameDataVector;
 
 /***********************************************************************************************
 
-CameraThread: a worker wxThread for retrieving images from a camera with OpenCV
-and sending them to GUI (a wxEvtHandler*) for display
+    CameraThread: a worker wxThread for retrieving images from a camera with OpenCV
+                  and sending them to GUI (a wxEvtHandler*) for display
 
 ***********************************************************************************************/
 

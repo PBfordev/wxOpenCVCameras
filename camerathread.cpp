@@ -61,7 +61,7 @@ CameraThread::CameraThread(const wxString& cameraAddress, const wxString& camera
     : wxThread(wxTHREAD_JOINABLE),
       m_cameraAddress(cameraAddress), m_cameraName(cameraName), m_eventSink(eventSink),
       m_frames(frames), m_framesCS(framesCS),
-      m_sleepTime(sleepTime), m_thumbnailSize(targetFrameSize)
+      m_thumbnailSize(targetFrameSize), m_sleepTime(sleepTime)
 {}
 
 bool CameraThread::InitCapture()
@@ -86,7 +86,7 @@ wxThread::ExitCode CameraThread::Entry()
 
     if ( !InitCapture() )
     {
-        wxLogTrace(TRACE_WXOPENCVCAMERAS, "Failed to init capture for camera '%s'", GetCameraName());
+        wxLogTrace(TRACE_WXOPENCVCAMERAS, "Failed to start capture for camera '%s'", GetCameraName());
         m_eventSink.QueueEvent(new CameraEvent(EVT_CAMERA_ERROR_OPEN, GetCameraName()));
         return static_cast<wxThread::ExitCode>(nullptr);
     }
@@ -101,9 +101,9 @@ wxThread::ExitCode CameraThread::Entry()
 
     const bool createThumbnail = m_thumbnailSize.GetWidth() > 0 && m_thumbnailSize.GetHeight() > 0;
 
-    cv::Mat          matFrame;
-    wxULongLong      frameNumber = 0;
-    wxStopWatch      stopWatch;
+    cv::Mat     matFrame;
+    wxULongLong frameNumber{0};
+    wxStopWatch stopWatch;
 
     m_isCapturing = true;
 
@@ -130,8 +130,8 @@ wxThread::ExitCode CameraThread::Entry()
                     cv::Mat matThumbnail;
 
                     stopWatch.Start();
-                    frameData->SetThumbnail(new wxBitmap(m_thumbnailSize, 24));
                     cv::resize(matFrame, matThumbnail, cv::Size(m_thumbnailSize.GetWidth(), m_thumbnailSize.GetHeight()));
+                    frameData->SetThumbnail(new wxBitmap(m_thumbnailSize, 24));
                     ConvertMatBitmapTowxBitmap(matThumbnail, *frameData->GetThumbnail());
                     frameData->SetTimeToCreateThumbnail(stopWatch.Time());
                 }

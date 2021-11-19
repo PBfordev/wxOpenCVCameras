@@ -10,9 +10,10 @@
 #include <wx/wx.h>
 #include <wx/choicdlg.h>
 #include <wx/thread.h>
-#include <wx/wupdlock.h>
 #include <wx/utils.h>
 #include <wx/wrapsizer.h>
+#include <wx/wupdlock.h>
+
 
 #include "cameragridframe.h"
 #include "camerapanel.h"
@@ -182,7 +183,7 @@ void CameraGridFrame::OnUpdateInfo(wxTimerEvent&)
 
     // This number is not indicative of the maximum possible performance.
     // It depends on how many cameras are there, on their fps and time to sleep in the thread
-    // and also on the interval and resolution of m_processNewCameraFrameDataTimer.
+    // and last but not least on the interval and resolution of m_processNewCameraFrameDataTimer.
     SetStatusText(wxString::Format("%s frames processed by GUI in the last second",
         (m_framesProcessed - prevFramesProcessed).ToString()), 1);
 
@@ -218,7 +219,7 @@ void CameraGridFrame::RemoveCamera(const wxString& cameraName)
 
     wxCHECK_RET(it != m_cameras.end(), wxString::Format("Camera '%s' not found, could not be deleted.", cameraName));
 
-    wxLogTrace(TRACE_WXOPENCVCAMERAS, "Removing camera '%s'....", cameraName);
+    wxLogTrace(TRACE_WXOPENCVCAMERAS, "Removing camera '%s'...", cameraName);
     it->second.thread->Delete();
     delete it->second.thread;
 
@@ -370,7 +371,7 @@ OneCameraFrame* CameraGridFrame::FindOneCameraFrameForCamera(const wxString& cam
 {
     const auto& children = GetChildren();
 
-    for ( auto child : children )
+    for ( const auto child : children )
     {
         OneCameraFrame* ocFrame = dynamic_cast<OneCameraFrame*>(child);
 

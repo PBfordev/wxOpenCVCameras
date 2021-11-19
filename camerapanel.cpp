@@ -48,15 +48,15 @@ void CameraPanel::OnPaint(wxPaintEvent&)
     {
         case Connecting:
             statusString = "Connecting";
-            statusColor = *wxBLUE;
+            statusColor  = *wxBLUE;
             break;
         case Receiving:
             statusString = "Receiving";
-            statusColor = *wxGREEN;
+            statusColor  = *wxGREEN;
             break;
         case Error:
             statusString = "ERROR";
-            statusColor = *wxRED;
+            statusColor  = *wxRED;
             break;
     }
 
