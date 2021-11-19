@@ -39,8 +39,9 @@ In the debug build, various diagnostic messages are output with `wxLogTrace(TRAC
 Note
 ---------
 Removing a camera (i.e., stopping a thread) may sometimes take a while so that the program
-appears to be stuck. However, this happens when the `cv::VideoCapture` is still being opened
-(i.e., the "Connecting" state), where the thread cannot test whether to stop.
+appears to be stuck. However, this happens when the worker thread is stuck in an OpenCV call
+(e.g., opening/closing `cv::VideoCapture` or grabbing the image) that may sometimes take a while,
+where the thread cannot test whether to stop.
 
 Requirements
 ---------
