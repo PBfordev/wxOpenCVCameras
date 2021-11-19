@@ -46,6 +46,8 @@ protected:
 };
 
 // Camera capture started
+// camera address can be retrieved via event's GetString(),
+// camera fps can be retrieved via event's GetInt(), if it returns non-zero
 wxDECLARE_EVENT(EVT_CAMERA_CAPTURE_STARTED, CameraEvent);
 // Could not open OpenCV camera capture
 wxDECLARE_EVENT(EVT_CAMERA_ERROR_OPEN, CameraEvent);

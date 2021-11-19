@@ -13,7 +13,7 @@
 OneCameraFrame::OneCameraFrame(wxWindow* parent, const wxString& cameraName)
     : wxFrame(parent, wxID_ANY, cameraName)
 {
-    m_cameraPanel = new CameraPanel(this, cameraName);
+    m_cameraPanel = new CameraPanel(this, cameraName, true);
     m_cameraPanel->SetMinSize(wxSize(640, 400));
     m_cameraPanel->SetMaxSize(wxSize(640, 400));
 }

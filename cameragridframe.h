@@ -49,6 +49,8 @@ private:
     wxTimer                        m_processNewCameraFrameDataTimer;
     CameraFrameDataVector          m_newCameraFrameData;
     wxCriticalSection              m_newCameraFrameDataCS;
+    wxTimer                        m_updateInfoTimer;
+    wxULongLong                    m_framesProcessed{0};
 
     void OnAddCamera(wxCommandEvent&);
     void OnAddAllKnownCameras(wxCommandEvent&);
@@ -56,6 +58,8 @@ private:
     void OnRemoveAllCameras(wxCommandEvent&);
 
     void OnShowOneCameraFrame(wxMouseEvent& evt);
+
+    void OnUpdateInfo(wxTimerEvent&);
 
     void AddCamera(const wxString& address);
     void RemoveCamera(const wxString& cameraName);

@@ -86,12 +86,17 @@ wxThread::ExitCode CameraThread::Entry()
 
     if ( !InitCapture() )
     {
+        wxLogTrace(TRACE_WXOPENCVCAMERAS, "Failed to init capture for camera '%s'", GetCameraName());
         m_eventSink.QueueEvent(new CameraEvent(EVT_CAMERA_ERROR_OPEN, GetCameraName()));
         return static_cast<wxThread::ExitCode>(nullptr);
     }
     else
     {
-        m_eventSink.QueueEvent(new CameraEvent(EVT_CAMERA_CAPTURE_STARTED, GetCameraName()));
+        CameraEvent* evt = new CameraEvent(EVT_CAMERA_CAPTURE_STARTED, GetCameraName());
+
+        evt->SetString(m_cameraAddress);
+        evt->SetInt(m_cameraCapture->get(static_cast<int>(cv::CAP_PROP_FPS)));
+        m_eventSink.QueueEvent(evt);
     }
 
     const bool createThumbnail = m_thumbnailSize.GetWidth() > 0 && m_thumbnailSize.GetHeight() > 0;

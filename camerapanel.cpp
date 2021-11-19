@@ -13,9 +13,10 @@
 
 #include "camerapanel.h"
 
-CameraPanel::CameraPanel(wxWindow* parent, const wxString& cameraName, Status status)
+CameraPanel::CameraPanel(wxWindow* parent, const wxString& cameraName,
+                        bool drawPaintTime, Status status)
     : wxPanel(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxFULL_REPAINT_ON_RESIZE | wxBORDER_RAISED),
-      m_cameraName(cameraName), m_status(status)
+      m_cameraName(cameraName), m_drawPaintTime(drawPaintTime), m_status(status)
 {
     SetBackgroundColour(*wxBLACK);
     SetBackgroundStyle(wxBG_STYLE_PAINT);
@@ -35,7 +36,9 @@ void CameraPanel::OnPaint(wxPaintEvent&)
     wxAutoBufferedPaintDC dc(this);
     wxString              statusString;
     wxColour              statusColor(*wxBLUE);
+    wxStopWatch           stopWatch;
 
+    stopWatch.Start();
     dc.Clear();
 
     if ( m_bitmap.IsOk() )
@@ -58,6 +61,10 @@ void CameraPanel::OnPaint(wxPaintEvent&)
     }
 
     wxDCTextColourChanger tcChanger(dc, statusColor);
+    wxString              infoText(wxString::Format("%s: %s", m_cameraName, statusString));
 
-    dc.DrawText(wxString::Format("%s: %s", m_cameraName, statusString), 5, 5);
+    if ( m_drawPaintTime )
+        infoText.Printf("%s\nFrame painted in %ld ms", infoText, stopWatch.Time());
+
+    dc.DrawText(infoText, 5, 5);
 }

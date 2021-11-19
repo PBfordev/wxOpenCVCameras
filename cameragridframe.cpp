@@ -43,13 +43,15 @@ CameraGridFrame::CameraGridFrame(wxWindow* parent) : wxFrame(parent, wxID_ANY, "
     cameraMenu->Append(wxID_FILE4, "Add Apple Stream");
     cameraMenu->Append(wxID_FILE5, "Add BBC World");
     cameraMenu->Append(wxID_FILE6, "Add ABC Live");
-    cameraMenu->Append(ID_CAMERA_ADD_ALL_KNOWN, "Add All Known Cameras");
+    cameraMenu->Append(ID_CAMERA_ADD_ALL_KNOWN, "Add All &Known Cameras");
     cameraMenu->AppendSeparator();
     cameraMenu->Append(ID_CAMERA_REMOVE, "&Remove...");
-    cameraMenu->Append(ID_CAMERA_REMOVE_ALL, "Remove &All");
+    cameraMenu->Append(ID_CAMERA_REMOVE_ALL, "Remove A&ll");
 
     menuBar->Append(cameraMenu, "&Camera");
     SetMenuBar(menuBar);
+
+    CreateStatusBar(2);
 
     SetClientSize(900, 700);
 
@@ -74,6 +76,9 @@ CameraGridFrame::CameraGridFrame(wxWindow* parent) : wxFrame(parent, wxID_ANY, "
     Bind(EVT_CAMERA_ERROR_OPEN, &CameraGridFrame::OnCameraErrorOpen, this);
     Bind(EVT_CAMERA_ERROR_EMPTY, &CameraGridFrame::OnCameraErrorEmpty, this);
     Bind(EVT_CAMERA_ERROR_EXCEPTION, &CameraGridFrame::OnCameraErrorException, this);
+
+    m_updateInfoTimer.Bind(wxEVT_TIMER, &CameraGridFrame::OnUpdateInfo, this);
+    m_updateInfoTimer.Start(1000); // once a second
 
     wxLog::AddTraceMask(TRACE_WXOPENCVCAMERAS);
 }
@@ -158,6 +163,30 @@ void CameraGridFrame::OnShowOneCameraFrame(wxMouseEvent& evt)
 
     ocFrame = new OneCameraFrame(this, cameraPanel->GetCameraName());
     ocFrame->Show();
+}
+
+void CameraGridFrame::OnUpdateInfo(wxTimerEvent&)
+{
+    static wxULongLong prevFramesProcessed{0};
+
+    size_t camerasCapturing{0};
+
+    for ( const auto& c : m_cameras )
+    {
+        if ( c.second.thread->IsCapturing() )
+            camerasCapturing++;
+    }
+
+    SetStatusText(wxString::Format("%zu cameras (%zu capturing)",
+        m_cameras.size(), camerasCapturing), 0);
+
+    // This number is not indicative of the maximum possible performance.
+    // It depends on how many cameras are there, on their fps and time to sleep in the thread
+    // and also on the interval and resolution of m_processNewCameraFrameDataTimer.
+    SetStatusText(wxString::Format("%s frames processed by GUI in the last second",
+        (m_framesProcessed - prevFramesProcessed).ToString()), 1);
+
+    prevFramesProcessed = m_framesProcessed;
 }
 
 void CameraGridFrame::AddCamera(const wxString& address)
@@ -277,12 +306,17 @@ void CameraGridFrame::OnProcessNewCameraFrameData(wxTimerEvent&)
     }
 
     wxLogTrace(TRACE_WXOPENCVCAMERAS, "Processed %zu new camera frames in %ld ms.", frameData.size(), stopWatch.Time());
+
+    m_framesProcessed += frameData.size();
     frameData.clear();
 }
 
 void CameraGridFrame::OnCameraCaptureStarted(CameraEvent& evt)
 {
-    wxLogTrace(TRACE_WXOPENCVCAMERAS, "Started capturing from camera '%s'.",  evt.GetCameraName());
+    wxLogTrace(TRACE_WXOPENCVCAMERAS, "Started capturing from camera '%s' (%s fps, address '%s')'.",
+        evt.GetCameraName(),
+        evt.GetInt() ? wxString::Format("%d", evt.GetInt()) : "n/a",
+        evt.GetString());
 }
 
 void CameraGridFrame::OnCameraErrorOpen(CameraEvent& evt)

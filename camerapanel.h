@@ -18,7 +18,8 @@ class CameraPanel : public wxPanel
 public:
     enum Status { Connecting, Receiving, Error };
 
-    CameraPanel(wxWindow* parent, const wxString& cameraName, Status status = Connecting);
+    CameraPanel(wxWindow* parent, const wxString& cameraName,
+                bool drawPaintTime = false, Status status = Connecting);
 
     void SetBitmap(const wxBitmap& bitmap, Status status = Receiving);
 
@@ -27,6 +28,7 @@ public:
 private:
     wxBitmap m_bitmap;
     wxString m_cameraName;
+    bool     m_drawPaintTime;
     Status   m_status{Connecting};
 
     void OnPaint(wxPaintEvent&);
