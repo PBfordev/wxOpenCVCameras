@@ -268,6 +268,11 @@ void CameraGridFrame::OnProcessNewCameraFrameData(wxTimerEvent&)
     for ( const auto& fd : frameData )
     {
         const wxString   cameraName = fd->GetCameraName();
+        auto             it = m_cameras.find(cameraName);
+
+        if ( it == m_cameras.end() || !it->second.thread->IsCapturing() )
+            continue; // ignore yet-unprocessed frames from removed or errored cameras
+
         CameraPanel*     cameraThumbnailPanel = FindThumbnailPanelForCamera(cameraName);
         const wxBitmap*  cameraFrame = fd->GetFrame();
         const wxBitmap*  cameraFrameThumbnail = fd->GetThumbnail();
@@ -294,6 +299,8 @@ void CameraGridFrame::OnProcessNewCameraFrameData(wxTimerEvent&)
         if ( ocFrame )
             ocFrame->SetCameraBitmap(*cameraFrame);
 
+        m_framesProcessed++;
+
 #if 0
         wxLogTrace(TRACE_WXOPENCVCAMERAS, "Frame from camera '%s' for frame #%s with resolution %dx%d took %ld ms from capture to process"
             " (OpenCV times: retrieve %ld ms, convert %ld ms, thumbnail %s ms).",
@@ -308,7 +315,6 @@ void CameraGridFrame::OnProcessNewCameraFrameData(wxTimerEvent&)
 
     wxLogTrace(TRACE_WXOPENCVCAMERAS, "Processed %zu new camera frames in %ld ms.", frameData.size(), stopWatch.Time());
 
-    m_framesProcessed += frameData.size();
     frameData.clear();
 }
 

@@ -63,7 +63,7 @@ void CameraPanel::OnPaint(wxPaintEvent&)
     wxDCTextColourChanger tcChanger(dc, statusColor);
     wxString              infoText(wxString::Format("%s: %s", m_cameraName, statusString));
 
-    if ( m_drawPaintTime )
+    if ( m_drawPaintTime && m_status == Receiving )
         infoText.Printf("%s\nFrame painted in %ld ms", infoText, stopWatch.Time());
 
     dc.DrawText(infoText, 5, 5);
