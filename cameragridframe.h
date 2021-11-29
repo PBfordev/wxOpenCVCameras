@@ -29,6 +29,7 @@ private:
     enum
     {
         ID_CAMERA_ADD_ALL_KNOWN = wxID_HIGHEST + 1,
+        ID_CAMERA_ADD_DEFAULT_WEBCAM,
         ID_CAMERA_REMOVE,
         ID_CAMERA_REMOVE_ALL
     };

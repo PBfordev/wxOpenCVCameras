@@ -38,13 +38,15 @@ CameraGridFrame::CameraGridFrame(wxWindow* parent) : wxFrame(parent, wxID_ANY, "
     wxMenuBar* menuBar = new wxMenuBar();
 
     cameraMenu->Append(wxID_NEW,   "&Add...");
+    cameraMenu->Append(ID_CAMERA_ADD_DEFAULT_WEBCAM, "Add default &webcam");
+    cameraMenu->AppendSeparator();
     cameraMenu->Append(wxID_FILE1, "Add Pendulum");
     cameraMenu->Append(wxID_FILE2, "Add Bunny 1");
     cameraMenu->Append(wxID_FILE3, "Add Bunny 2");
     cameraMenu->Append(wxID_FILE4, "Add Apple Stream");
     cameraMenu->Append(wxID_FILE5, "Add BBC World");
     cameraMenu->Append(wxID_FILE6, "Add ABC Live");
-    cameraMenu->Append(ID_CAMERA_ADD_ALL_KNOWN, "Add All &Known Cameras");
+    cameraMenu->Append(ID_CAMERA_ADD_ALL_KNOWN, "Add All &Known IP Cameras");
     cameraMenu->AppendSeparator();
     cameraMenu->Append(ID_CAMERA_REMOVE, "&Remove...");
     cameraMenu->Append(ID_CAMERA_REMOVE_ALL, "Remove A&ll");
@@ -59,6 +61,8 @@ CameraGridFrame::CameraGridFrame(wxWindow* parent) : wxFrame(parent, wxID_ANY, "
     SetSizer(new wxWrapSizer(wxHORIZONTAL));
 
     Bind(wxEVT_MENU, &CameraGridFrame::OnAddCamera, this, wxID_NEW);
+    Bind(wxEVT_MENU, [this](wxCommandEvent&) { AddCamera("0"); }, ID_CAMERA_ADD_DEFAULT_WEBCAM);
+
     Bind(wxEVT_MENU, [this](wxCommandEvent&) { AddCamera(knownCameraAdresses[0]); }, wxID_FILE1);
     Bind(wxEVT_MENU, [this](wxCommandEvent&) { AddCamera(knownCameraAdresses[1]); }, wxID_FILE2);
     Bind(wxEVT_MENU, [this](wxCommandEvent&) { AddCamera(knownCameraAdresses[2]); }, wxID_FILE3);
