@@ -52,13 +52,15 @@ void CameraPanel::OnPaint(wxPaintEvent&)
 #else
     const wxSize clientSize(GetClientSize());
 
+    wxPaintDC dc(this);
+
     if ( clientSize.GetWidth() < 1 || clientSize.GetHeight() < 1 )
         return;
 
-    wxPaintDC  dc(this);
     wxBitmap   memDCBitmap(clientSize);
-    wxMemoryDC memDC(memDCBitmap);
+    wxMemoryDC memDC(&dc);
 
+    memDC.SelectObject(memDCBitmap);
     paintDC = &memDC;
 #endif
 
