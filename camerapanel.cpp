@@ -18,7 +18,6 @@ CameraPanel::CameraPanel(wxWindow* parent, const wxString& cameraName,
     : wxPanel(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxFULL_REPAINT_ON_RESIZE | wxBORDER_RAISED),
       m_cameraName(cameraName), m_drawPaintTime(drawPaintTime), m_status(status)
 {
-    SetBackgroundColour(*wxBLACK);
     SetBackgroundStyle(wxBG_STYLE_PAINT);
     Bind(wxEVT_PAINT, &CameraPanel::OnPaint, this);
 }
@@ -31,18 +30,46 @@ void CameraPanel::SetBitmap(const wxBitmap& bitmap, Status status)
     Refresh(); Update();
 }
 
+// On MSW, displaying 4k bitmaps from 60 fps camera with
+// wxAutoBufferedPaintDC in some scenarios meant the application
+// after while started for some reason lagging very badly,
+// even unable to process the camera frames. This did not happen
+// when using wxPaintDC instead. However, drawing the same way with
+// wxPaintDC instead of wxAutoBufferedPaintDC meant the panels were flashing.
+// In the end, the old-fashioned way with wxMemoryDC
+// is used, even if it means that drawing cannot be timed (easily).
+
 void CameraPanel::OnPaint(wxPaintEvent&)
 {
+    wxDC* paintDC{nullptr};
+
+#if CAMERAPANEL_USE_AUTOBUFFEREDPAINTDC
     wxAutoBufferedPaintDC dc(this);
-    wxString              statusString;
-    wxColour              statusColor(*wxBLUE);
     wxStopWatch           stopWatch;
 
+    paintDC = &dc;
     stopWatch.Start();
-    dc.Clear();
+#else
+    const wxSize clientSize(GetClientSize());
+
+    if ( clientSize.GetWidth() < 1 || clientSize.GetHeight() < 1 )
+        return;
+
+    wxPaintDC  dc(this);
+    wxBitmap   memDCBitmap(clientSize);
+    wxMemoryDC memDC(memDCBitmap);
+
+    paintDC = &memDC;
+#endif
+
+    wxString    statusString;
+    wxColour    statusColor(*wxBLUE);
+
+    paintDC->SetBackground(*wxBLACK_BRUSH);
+    paintDC->Clear();
 
     if ( m_bitmap.IsOk() )
-        dc.DrawBitmap(m_bitmap, 0, 0, false);
+        paintDC->DrawBitmap(m_bitmap, 0, 0, false);
 
     switch ( m_status )
     {
@@ -60,11 +87,17 @@ void CameraPanel::OnPaint(wxPaintEvent&)
             break;
     }
 
-    wxDCTextColourChanger tcChanger(dc, statusColor);
+    wxDCTextColourChanger tcChanger(*paintDC, statusColor);
     wxString              infoText(wxString::Format("%s: %s", m_cameraName, statusString));
 
+#if CAMERAPANEL_USE_AUTOBUFFEREDPAINTDC
     if ( m_drawPaintTime && m_status == Receiving )
         infoText.Printf("%s\nFrame painted in %ld ms", infoText, stopWatch.Time());
+#endif
 
-    dc.DrawText(infoText, 5, 5);
+    paintDC->DrawText(infoText, 5, 5);
+
+#if !CAMERAPANEL_USE_AUTOBUFFEREDPAINTDC
+    dc.Blit(wxPoint(0, 0), clientSize, &memDC, wxPoint(0, 0));
+#endif
 }
