@@ -24,15 +24,21 @@ and `CameraThread::m_framesCS`). The GUI thread (a `wxFrame`-derived `CameraGrid
 then uses a fixed-frequency `wxTimer` to update the camera display with images stored
 in the container.
 
+The GUI has a crude control of the camera (thread) by using `wxMessageQueue` to pass
+the commands (such as setting the thread sleep time or getting/setting one of
+`cv::VideoCaptureProperties`).
+
 GUI
 ---------
-Output from all cameras is displayed in a single frame as thumbnails (`CameraPanel`s
-in a `wxWrapSizer`), left doubleclicking a thumbnail opens a new frame (`OneCameraFrame`)
-showing the camera output in the full resolution.
-
 A camera can be added either as an integer (e.g., `0` for a default webcam) or as an URL.
 There is a couple of preset camera URLs offered via a menu, but these are not guaranteed
-to stay online and are mostly time-limited.
+to stay online and are mostly time-limited. When a camera is added, settings from menu
+"Defaults for New Cameras" are used.
+
+Output from all cameras is displayed in a single frame as thumbnails (`CameraPanel`s
+in a `wxWrapSizer`). Left doubleclicking a thumbnail opens a new frame (`OneCameraFrame`)
+showing the camera output in the full resolution. Right clicking a thumbnail shows 
+a popup menu allowing crude communication with the camera (thread).
 
 In the debug build, various diagnostic messages are output with `wxLogTrace(TRACE_WXOPENCVCAMERAS, ...)`.
 
