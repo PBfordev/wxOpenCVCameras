@@ -16,6 +16,9 @@ class wxOpenCVCamerasApp : public wxApp
 public:
     bool OnInit() override
     {
+        SetVendorName("PB");
+        SetAppName("wxOpenCVCameras");
+
         (new CameraGridFrame)->Show();
         return true;
     }

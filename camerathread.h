@@ -12,6 +12,8 @@
 #define CAMERATHREAD_H
 
 #include <wx/wx.h>
+#include <wx/any.h>
+#include <wx/msgqueue.h>
 #include <wx/thread.h>
 
 #include <atomic>
@@ -21,6 +23,53 @@
 
 // for wxLogTrace
 #define TRACE_WXOPENCVCAMERAS "WXOPENCVCAMERAS"
+
+/***********************************************************************************************
+
+    CameraCommandData: a struct used by the main thread to communicate with CameraThread.
+
+***********************************************************************************************/
+
+struct CameraCommandData
+{
+    // see cv::VideoCapture get() and set() methods
+    struct VCPropCommandParameter
+    {
+        int    id{0};
+        double value{0.};
+        // only for SetVCProp, result of cv::VideoCapture::set()
+        bool   succeeded{false};
+    };
+    // for setting/getting multiple properties at once
+	typedef std::vector<VCPropCommandParameter> VCPropCommandParameters;
+
+    struct CameraInfo
+    {
+        long        threadSleepDuration{0};
+        wxLongLong  captureStartedTime{0};
+        wxULongLong framesCapturedCount{0};
+        wxString    cameraCaptureBackendName;
+        wxString    cameraAddress;
+    };
+
+    enum Commands
+    {
+        // parameter is CameraInfo
+        GetCameraInfo = 0,
+
+        // parameter is long, see CameraThread::m_sleepDuration
+        SetThreadSleepDuration,
+
+        // parameter is VCPropCommandParameters
+        GetVCProp,
+        SetVCProp,
+    };
+
+    Commands command;
+    wxAny    parameter;
+};
+
+typedef wxMessageQueue<CameraCommandData> CameraCommandDatas;
 
 /***********************************************************************************************
 
@@ -40,6 +89,9 @@ public:
 
     wxString GetCameraName() const  { return m_cameraName; }
 
+    // only for EVT_CAMERA_COMMAND_RESULT
+    CameraCommandData GetCommandResult() const { return GetPayload<CameraCommandData>(); }
+
     wxEvent* Clone() const override { return new CameraEvent(*this); }
 protected:
     wxString    m_cameraName;
@@ -49,6 +101,8 @@ protected:
 // VideoCapture's backend can be retrieved via event's GetString(),
 // camera fps can be retrieved via event's GetInt(), if it returns non-zero
 wxDECLARE_EVENT(EVT_CAMERA_CAPTURE_STARTED, CameraEvent);
+// Result of the CameraCommand::GetXXX command sent to camera, use GetCommandResult()
+wxDECLARE_EVENT(EVT_CAMERA_COMMAND_RESULT, CameraEvent);
 // Could not open OpenCV camera capture
 wxDECLARE_EVENT(EVT_CAMERA_ERROR_OPEN, CameraEvent);
 // Could not retrieve a frame, consider connection to the camera lost.
@@ -122,7 +176,46 @@ private:
 };
 
 typedef std::unique_ptr<CameraFrameData> CameraFrameDataPtr;
-typedef std::vector<CameraFrameDataPtr>  CameraFrameDataVector;
+typedef std::vector<CameraFrameDataPtr>  CameraFrameDataPtrs;
+
+
+/***********************************************************************************************
+
+    CameraSetupData: a struct containing camera setup
+
+***********************************************************************************************/
+
+struct CameraSetupData
+{
+    // how long the camera thread sleeps after grabbing the frame
+    enum
+    {
+        SleepFromFPS = -1, // = (1000 / camera FPS ) - time taken to process the frame
+        SleepNone    =  0  // no sleep in the thread
+    };
+
+    wxString             name;
+    wxString             address;
+    int                  apiPreference{0}; // = cv::CAP_ANY
+    long                 sleepDuration{SleepFromFPS}; // either one of Sleep* or time in milliseconds
+    int                  FPS{0}; // if 0 do not attempt to set
+    int                  defaultFPS{25}; // when the camera FPS cannot be retrieved
+    bool                 useMJPGFourCC{false};
+
+	// where to send EVT_CAMERA_xxx events;
+    wxEvtHandler*        eventSink{nullptr};
+    // new frames captured from camera, to be processed by the GUI thread
+	CameraFrameDataPtrs* frames{nullptr};
+    wxCriticalSection*   framesCS{nullptr};
+    wxSize               frameSize; // if width or height is 0, not set
+    wxSize               thumbnailSize;
+
+	// commands send from the GUI thread to camera thread
+	CameraCommandDatas*		 commands{nullptr};
+
+    bool IsOk() const;
+};
+
 
 
 /***********************************************************************************************
@@ -139,28 +232,27 @@ namespace cv { class VideoCapture; }
 class CameraThread : public wxThread
 {
 public:
-    CameraThread(const wxString& cameraAddress, const wxString& cameraName,
-                 wxEvtHandler& eventSink,
-                 CameraFrameDataVector& frames,
-                 wxCriticalSection& framesCS,
-                 const wxSize& thumbnailSize, long sleepTime = 30);
+    CameraThread(const CameraSetupData& cameraSetupData);
 
-    wxString GetCameraAddress() const { return m_cameraAddress; }
-    wxString GetCameraName() const    { return m_cameraName; }
+    wxString GetCameraAddress() const { return m_cameraSetupData.address; }
+    wxString GetCameraName() const    { return m_cameraSetupData.name; }
     bool     IsCapturing() const      { return m_isCapturing; }
 protected:
-    wxString                          m_cameraAddress;
-    wxString                          m_cameraName;
-    wxEvtHandler&                     m_eventSink;
-    CameraFrameDataVector&            m_frames;
-    wxCriticalSection&                m_framesCS;
-    long                              m_sleepTime{0};
-    std::unique_ptr<cv::VideoCapture> m_cameraCapture;
-    wxSize                            m_thumbnailSize;
-    std::atomic_bool                  m_isCapturing{false};
+    CameraSetupData                    m_cameraSetupData;
 
-    bool     InitCapture();
+    std::unique_ptr<cv::VideoCapture> m_cameraCapture;
+    std::atomic_bool                  m_isCapturing{false};
+    wxLongLong                        m_captureStartedTime; // when was capture opened, obtained with wxGetUTCTimeMillis()
+    wxULongLong                       m_framesCapturedCount{0};
+
     ExitCode Entry() override;
+
+    bool InitCapture();
+    void SetCameraResolution(const wxSize& resolution);
+    void SetCameraUseMJPEG();
+    void SetCameraFPS(const int FPS);
+
+	void ProcessCameraCommand(const CameraCommandData& commandData);
 };
 
 #endif // #ifndef CAMERATHREAD_H

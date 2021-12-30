@@ -31,11 +31,11 @@ void CameraPanel::SetBitmap(const wxBitmap& bitmap, Status status)
 }
 
 // On MSW, displaying 4k bitmaps from 60 fps camera with
-// wxAutoBufferedPaintDC in some scenarios meant the application
+// wx(Auto)BufferedPaintDC in some scenarios meant the application
 // after while started for some reason lagging very badly,
 // even unable to process the camera frames. This did not happen
 // when using wxPaintDC instead. However, drawing the same way with
-// wxPaintDC instead of wxAutoBufferedPaintDC meant the panels were flashing.
+// wxPaintDC instead of wx(Auto)BufferedPaintDC meant the panels were flashing.
 // In the end, the old-fashioned way with wxMemoryDC
 // is used, even if it means that drawing cannot be timed (easily).
 

@@ -23,6 +23,7 @@
 
 // see the header for description
 wxDEFINE_EVENT(EVT_CAMERA_CAPTURE_STARTED, CameraEvent);
+wxDEFINE_EVENT(EVT_CAMERA_COMMAND_RESULT, CameraEvent);
 wxDEFINE_EVENT(EVT_CAMERA_ERROR_OPEN, CameraEvent);
 wxDEFINE_EVENT(EVT_CAMERA_ERROR_EMPTY, CameraEvent);
 wxDEFINE_EVENT(EVT_CAMERA_ERROR_EXCEPTION, CameraEvent);
@@ -49,31 +50,33 @@ CameraFrameData::~CameraFrameData()
 
 /***********************************************************************************************
 
+    CameraInitData
+
+***********************************************************************************************/
+
+
+bool CameraSetupData::IsOk() const
+{
+    return  !name.empty()
+            && !address.empty()
+            && defaultFPS > 0
+            && eventSink
+            && frames && framesCS
+            && frameSize.GetWidth() >= 0 && frameSize.GetHeight() >= 0
+			&& commands;
+}
+
+/***********************************************************************************************
+
     CameraThread
 
 ***********************************************************************************************/
 
-CameraThread::CameraThread(const wxString& cameraAddress, const wxString& cameraName,
-                           wxEvtHandler& eventSink,
-                           CameraFrameDataVector& frames,
-                           wxCriticalSection& framesCS,
-                           const wxSize& targetFrameSize, long sleepTime)
+CameraThread::CameraThread(const CameraSetupData& cameraSetupData)
     : wxThread(wxTHREAD_JOINABLE),
-      m_cameraAddress(cameraAddress), m_cameraName(cameraName), m_eventSink(eventSink),
-      m_frames(frames), m_framesCS(framesCS),
-      m_thumbnailSize(targetFrameSize), m_sleepTime(sleepTime)
-{}
-
-bool CameraThread::InitCapture()
+      m_cameraSetupData(cameraSetupData)
 {
-    unsigned long cameraIndex = 0;
-
-    if ( m_cameraAddress.ToCULong(&cameraIndex) )
-        m_cameraCapture.reset(new cv::VideoCapture(cameraIndex));
-    else
-        m_cameraCapture.reset(new cv::VideoCapture(m_cameraAddress.ToStdString()));
-
-    return m_cameraCapture->isOpened();
+    wxCHECK_RET(m_cameraSetupData.IsOk(), "Invalid camera initialization data");
 }
 
 wxThread::ExitCode CameraThread::Entry()
@@ -87,31 +90,52 @@ wxThread::ExitCode CameraThread::Entry()
     if ( !InitCapture() )
     {
         wxLogTrace(TRACE_WXOPENCVCAMERAS, "Failed to start capture for camera '%s'", GetCameraName());
-        m_eventSink.QueueEvent(new CameraEvent(EVT_CAMERA_ERROR_OPEN, GetCameraName()));
+        m_cameraSetupData.eventSink->QueueEvent(new CameraEvent(EVT_CAMERA_ERROR_OPEN, GetCameraName()));
         return static_cast<wxThread::ExitCode>(nullptr);
     }
-    else
-    {
-        CameraEvent* evt = new CameraEvent(EVT_CAMERA_CAPTURE_STARTED, GetCameraName());
 
-        evt->SetString(wxString(m_cameraCapture->getBackendName()));
-        evt->SetInt(m_cameraCapture->get(static_cast<int>(cv::CAP_PROP_FPS)));
-        m_eventSink.QueueEvent(evt);
-    }
+    const bool createThumbnail = m_cameraSetupData.thumbnailSize.GetWidth() > 0 && m_cameraSetupData.thumbnailSize.GetHeight() > 0;
 
-    const bool createThumbnail = m_thumbnailSize.GetWidth() > 0 && m_thumbnailSize.GetHeight() > 0;
+    CameraEvent* evt{nullptr};
+    cv::Mat      matFrame;
+    wxStopWatch  stopWatch;
+    long         msPerFrame;
 
-    cv::Mat     matFrame;
-    wxULongLong frameNumber{0};
-    wxStopWatch stopWatch;
-
+    m_captureStartedTime = wxGetUTCTimeMillis();
     m_isCapturing = true;
+
+    if ( m_cameraSetupData.frameSize.GetWidth() > 0 )
+        SetCameraResolution(m_cameraSetupData.frameSize);
+    if ( m_cameraSetupData.useMJPGFourCC )
+        SetCameraUseMJPEG();
+    if ( m_cameraSetupData.FPS )
+        SetCameraFPS(m_cameraSetupData.FPS);
+
+    m_cameraSetupData.FPS = m_cameraCapture->get(static_cast<int>(cv::CAP_PROP_FPS));
+
+    evt = new CameraEvent(EVT_CAMERA_CAPTURE_STARTED, GetCameraName());
+    evt->SetString(wxString(m_cameraCapture->getBackendName()));
+    evt->SetInt(m_cameraSetupData.FPS);
+    m_cameraSetupData.eventSink->QueueEvent(evt);
+
 
     while ( !TestDestroy() )
     {
         try
         {
-            CameraFrameDataPtr frameData(new CameraFrameData(GetCameraName(), frameNumber++));
+            CameraFrameDataPtr frameData(new CameraFrameData(GetCameraName(), m_framesCapturedCount++));
+            wxLongLong         frameCaptureStartedTime;
+			CameraCommandData  commandData;
+
+			frameCaptureStartedTime = wxGetUTCTimeMillis();
+
+			if ( m_cameraSetupData.commands->ReceiveTimeout(0, commandData) == wxMSGQUEUE_NO_ERROR )
+				ProcessCameraCommand(commandData);
+
+            if ( m_cameraSetupData.FPS != 0 )
+                msPerFrame = 1000 / m_cameraSetupData.FPS;
+            else
+                msPerFrame = 1000 / m_cameraSetupData.defaultFPS;
 
             stopWatch.Start();
             (*m_cameraCapture) >> matFrame;
@@ -130,30 +154,45 @@ wxThread::ExitCode CameraThread::Entry()
                     cv::Mat matThumbnail;
 
                     stopWatch.Start();
-                    cv::resize(matFrame, matThumbnail, cv::Size(m_thumbnailSize.GetWidth(), m_thumbnailSize.GetHeight()));
-                    frameData->SetThumbnail(new wxBitmap(m_thumbnailSize, 24));
+                    cv::resize(matFrame, matThumbnail, cv::Size(m_cameraSetupData.thumbnailSize.GetWidth(), m_cameraSetupData.thumbnailSize.GetHeight()));
+                    frameData->SetThumbnail(new wxBitmap(m_cameraSetupData.thumbnailSize, 24));
                     ConvertMatBitmapTowxBitmap(matThumbnail, *frameData->GetThumbnail());
                     frameData->SetTimeToCreateThumbnail(stopWatch.Time());
                 }
 
                 {
-                    wxCriticalSectionLocker locker(m_framesCS);
+                    wxCriticalSectionLocker locker(*m_cameraSetupData.framesCS);
 
-                    m_frames.push_back(std::move(frameData));
+                    m_cameraSetupData.frames->push_back(std::move(frameData));
                 }
 
-                // In a real code, the duration to sleep would normally
-                // be computed based on the camera framerate, time taken
-                // to process the image, and system clock tick resolution.
-                if ( m_sleepTime > 0 )
-                    Sleep(m_sleepTime);
+                if ( m_cameraSetupData.sleepDuration == CameraSetupData::SleepFromFPS )
+                {
+                    const wxLongLong timeSinceFrameCaptureStarted = wxGetUTCTimeMillis() - frameCaptureStartedTime;
+                    const long       timeToSleep = msPerFrame - timeSinceFrameCaptureStarted.GetLo();
+
+                    // exact time slept depends among else on the resolution of the system clock
+                    // for example, for MSW see Remarks in the ::Sleep() documentation at https://docs.microsoft.com/en-us/windows/win32/api/synchapi/nf-synchapi-sleep
+                    if ( timeToSleep > 0 )
+                        Sleep(timeToSleep);
+                }
+                else if ( m_cameraSetupData.sleepDuration == CameraSetupData::SleepNone )
+                {
+                    continue;
+                }
+                else if ( m_cameraSetupData.sleepDuration > 0 )
+                {
+                    Sleep(m_cameraSetupData.sleepDuration);
+                }
                 else
-                    Yield();
+                {
+                    wxLogDebug("Invalid sleep duration %d", m_cameraSetupData.sleepDuration);
+                }
             }
             else // connection to camera lost
             {
                 m_isCapturing = false;
-                m_eventSink.QueueEvent(new CameraEvent(EVT_CAMERA_ERROR_EMPTY, GetCameraName()));
+                m_cameraSetupData.eventSink->QueueEvent(new CameraEvent(EVT_CAMERA_ERROR_EMPTY, GetCameraName()));
                 break;
             }
         }
@@ -161,24 +200,132 @@ wxThread::ExitCode CameraThread::Entry()
         {
             m_isCapturing = false;
 
-            CameraEvent* evt = new CameraEvent(EVT_CAMERA_ERROR_EXCEPTION, GetCameraName());
-
+            evt = new CameraEvent(EVT_CAMERA_ERROR_EXCEPTION, GetCameraName());
             evt->SetString(e.what());
-            m_eventSink.QueueEvent(evt);
+            m_cameraSetupData.eventSink->QueueEvent(evt);
+
             break;
         }
         catch ( ... )
         {
             m_isCapturing = false;
 
-            CameraEvent* evt = new CameraEvent(EVT_CAMERA_ERROR_EXCEPTION, GetCameraName());
-
+            evt = new CameraEvent(EVT_CAMERA_ERROR_EXCEPTION, GetCameraName());
             evt->SetString("Unknown exception");
-            m_eventSink.QueueEvent(evt);
+            m_cameraSetupData.eventSink->QueueEvent(evt);
+
             break;
         }
     }
 
     wxLogTrace(TRACE_WXOPENCVCAMERAS, "Exiting CameraThread for camera '%s'...", GetCameraName());
     return static_cast<wxThread::ExitCode>(nullptr);
+}
+
+
+bool CameraThread::InitCapture()
+{
+    unsigned long cameraIndex = 0;
+
+    if ( m_cameraSetupData.address.ToCULong(&cameraIndex) )
+        m_cameraCapture.reset(new cv::VideoCapture(cameraIndex, m_cameraSetupData.apiPreference));
+    else
+        m_cameraCapture.reset(new cv::VideoCapture(m_cameraSetupData.address.ToStdString(), m_cameraSetupData.apiPreference));
+
+    return m_cameraCapture->isOpened();
+}
+
+void CameraThread::SetCameraResolution(const wxSize& resolution)
+{
+    if ( m_cameraCapture->set(cv::CAP_PROP_FRAME_WIDTH, resolution.GetWidth()) )
+        wxLogTrace(TRACE_WXOPENCVCAMERAS, "Set frame width to %d for camera '%s'", resolution.GetWidth(), GetCameraName());
+    else
+        wxLogTrace(TRACE_WXOPENCVCAMERAS, "Could not set frame width to %d for camera '%s'", resolution.GetWidth(), GetCameraName());
+
+    if ( m_cameraCapture->set(cv::CAP_PROP_FRAME_HEIGHT, resolution.GetHeight()) )
+        wxLogTrace(TRACE_WXOPENCVCAMERAS, "Set frame height to %d for camera '%s'", resolution.GetHeight(), GetCameraName());
+    else
+        wxLogTrace(TRACE_WXOPENCVCAMERAS, "Could not set frame height to %d for camera '%s'", resolution.GetHeight(), GetCameraName());
+}
+
+void CameraThread::SetCameraUseMJPEG()
+{
+    if ( m_cameraCapture->set(cv::CAP_PROP_FOURCC, cv::VideoWriter::fourcc('M', 'J', 'P', 'G')) )
+        wxLogTrace(TRACE_WXOPENCVCAMERAS, "Set FourCC to 'MJPG' for camera '%s'", GetCameraName());
+    else
+        wxLogTrace(TRACE_WXOPENCVCAMERAS, "Could not set FourCC to 'MJPG' for camera '%s'", GetCameraName());
+}
+
+void CameraThread::SetCameraFPS(const int FPS)
+{
+    if ( m_cameraCapture->set(cv::CAP_PROP_FPS, m_cameraSetupData.FPS) )
+        wxLogTrace(TRACE_WXOPENCVCAMERAS, "Set FPS to %d for camera '%s'", FPS, GetCameraName());
+    else
+        wxLogTrace(TRACE_WXOPENCVCAMERAS, "Could not set FPS to %d for camera '%s'", FPS, GetCameraName());
+}
+
+
+void CameraThread::ProcessCameraCommand(const CameraCommandData& commandData)
+{
+	CameraEvent*      evt = new CameraEvent(EVT_CAMERA_COMMAND_RESULT, GetCameraName());
+	CameraCommandData evtCommand;
+
+	evtCommand.command = commandData.command;
+
+	if ( commandData.command == CameraCommandData::GetCameraInfo )
+	{
+        CameraCommandData::CameraInfo cameraInfo;
+
+        cameraInfo.threadSleepDuration      = m_cameraSetupData.sleepDuration;
+        cameraInfo.captureStartedTime       = m_captureStartedTime;
+        cameraInfo.framesCapturedCount      = m_framesCapturedCount;
+        cameraInfo.cameraCaptureBackendName = m_cameraCapture->getBackendName();
+        cameraInfo.cameraAddress            = m_cameraSetupData.address;
+
+		evtCommand.parameter = cameraInfo;
+	}
+	else if ( commandData.command == CameraCommandData::SetThreadSleepDuration )
+	{
+		m_cameraSetupData.sleepDuration = commandData.parameter.As<long>();
+
+        evtCommand.parameter = m_cameraSetupData.sleepDuration;
+	}
+	else if ( commandData.command == CameraCommandData::GetVCProp )
+	{
+		const CameraCommandData::VCPropCommandParameters params = commandData.parameter.As<CameraCommandData::VCPropCommandParameters>();
+		CameraCommandData::VCPropCommandParameters       evtParams;
+
+		for ( const auto& p: params )
+		{
+			CameraCommandData::VCPropCommandParameter evtParam;
+
+			evtParam.id = p.id;
+			evtParam.value = m_cameraCapture->get(p.id);
+			evtParams.push_back(evtParam);
+		}
+		evtCommand.parameter = evtParams;
+	}
+	else if ( commandData.command == CameraCommandData::SetVCProp )
+	{
+		const CameraCommandData::VCPropCommandParameters params = commandData.parameter.As<CameraCommandData::VCPropCommandParameters>();
+		CameraCommandData::VCPropCommandParameters       evtParams;
+
+		for ( const auto& p: params )
+		{
+			CameraCommandData::VCPropCommandParameter evtParam;
+
+			evtParam.id = p.id;
+			evtParam.value = p.value;
+			evtParam.succeeded = m_cameraCapture->set(p.id, p.value);
+			evtParams.push_back(evtParam);
+		}
+		evtCommand.parameter = evtParams;
+	}
+	else
+	{
+		wxFAIL_MSG("Invalid command");
+	}
+
+    evt->SetPayload(evtCommand);
+	m_cameraSetupData.eventSink->QueueEvent(evt);
 }
