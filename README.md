@@ -39,7 +39,7 @@ In the debug build, various diagnostic messages are output with `wxLogTrace(TRAC
 Notes
 ---------
 To convert `cv::Mat` to `wxBitmap`, the code uses `ConvertMatBitmapTowxBitmap()` from the 
-[wxOpenCVTest project](https://github.com/PBfordev/wxopencvtest), so all the notes there apply here is as well.
+[wxOpenCVTest project](https://github.com/PBfordev/wxopencvtest), so all the information there applies here is as well.
 
 Removing a camera (i.e., stopping a thread) may sometimes take a while so that the program
 appears to be stuck. However, this happens when the worker thread is stuck in an OpenCV call
