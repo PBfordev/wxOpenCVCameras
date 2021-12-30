@@ -18,15 +18,15 @@ as raw pointers and `CameraFrameData`s in `std::unique_ptr`.
 
 `CameraFrameData` is then added by a worker thread to a container
 shared between the GUI thread and camera threads. The container is `std::vector`
-(see `CameraGridFrame::m_newCameraFrameData` and `CameraThread::m_frames`) protected
+(see `CameraGridFrame::m_newCameraFrameData` and `CameraThread::CameraSetupData::frames`) protected
 by `wxCriticalSection` (see `CameraGridFrame::m_newCameraFrameDataCS`
-and `CameraThread::m_framesCS`). The GUI thread (a `wxFrame`-derived `CameraGridFrame`)
+and `CameraThread::CameraSetupData::framesCS`). The GUI thread (a `wxFrame`-derived `CameraGridFrame`)
 then uses a fixed-frequency `wxTimer` to update the camera display with images stored
 in the container.
 
 The GUI has a crude control of the camera (thread) by using `wxMessageQueue` to pass
 the commands (such as setting the thread sleep time or getting/setting one of
-`cv::VideoCaptureProperties`).
+`cv::VideoCaptureProperties`) from the GUI to the camera thread.
 
 GUI
 ---------
@@ -44,8 +44,9 @@ In the debug build, various diagnostic messages are output with `wxLogTrace(TRAC
 
 Notes
 ---------
-To convert `cv::Mat` to `wxBitmap`, the code uses `ConvertMatBitmapTowxBitmap()` from the 
-[wxOpenCVTest project](https://github.com/PBfordev/wxopencvtest), so all the information there applies here is as well.
+To convert `cv::Mat` to `wxBitmap`, the code uses `ConvertMatBitmapTowxBitmap()` from the
+[wxOpenCVTest project](https://github.com/PBfordev/wxopencvtest), so all the information
+provided there applies here is as well.
 
 Removing a camera (i.e., stopping a thread) may sometimes take a while so that the program
 appears to be stuck. However, this happens when the worker thread is stuck in an OpenCV call
