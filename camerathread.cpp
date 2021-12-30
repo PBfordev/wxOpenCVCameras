@@ -63,7 +63,7 @@ bool CameraSetupData::IsOk() const
             && eventSink
             && frames && framesCS
             && frameSize.GetWidth() >= 0 && frameSize.GetHeight() >= 0
-			&& commands;
+            && commands;
 }
 
 /***********************************************************************************************
@@ -125,12 +125,12 @@ wxThread::ExitCode CameraThread::Entry()
         {
             CameraFrameDataPtr frameData(new CameraFrameData(GetCameraName(), m_framesCapturedCount++));
             wxLongLong         frameCaptureStartedTime;
-			CameraCommandData  commandData;
+            CameraCommandData  commandData;
 
-			frameCaptureStartedTime = wxGetUTCTimeMillis();
+            frameCaptureStartedTime = wxGetUTCTimeMillis();
 
-			if ( m_cameraSetupData.commands->ReceiveTimeout(0, commandData) == wxMSGQUEUE_NO_ERROR )
-				ProcessCameraCommand(commandData);
+            if ( m_cameraSetupData.commands->ReceiveTimeout(0, commandData) == wxMSGQUEUE_NO_ERROR )
+                ProcessCameraCommand(commandData);
 
             if ( m_cameraSetupData.FPS != 0 )
                 msPerFrame = 1000 / m_cameraSetupData.FPS;
@@ -267,13 +267,13 @@ void CameraThread::SetCameraFPS(const int FPS)
 
 void CameraThread::ProcessCameraCommand(const CameraCommandData& commandData)
 {
-	CameraEvent*      evt = new CameraEvent(EVT_CAMERA_COMMAND_RESULT, GetCameraName());
-	CameraCommandData evtCommand;
+    CameraEvent*      evt = new CameraEvent(EVT_CAMERA_COMMAND_RESULT, GetCameraName());
+    CameraCommandData evtCommandData;
 
-	evtCommand.command = commandData.command;
+    evtCommandData.command = commandData.command;
 
-	if ( commandData.command == CameraCommandData::GetCameraInfo )
-	{
+    if ( commandData.command == CameraCommandData::GetCameraInfo )
+    {
         CameraCommandData::CameraInfo cameraInfo;
 
         cameraInfo.threadSleepDuration      = m_cameraSetupData.sleepDuration;
@@ -282,50 +282,50 @@ void CameraThread::ProcessCameraCommand(const CameraCommandData& commandData)
         cameraInfo.cameraCaptureBackendName = m_cameraCapture->getBackendName();
         cameraInfo.cameraAddress            = m_cameraSetupData.address;
 
-		evtCommand.parameter = cameraInfo;
-	}
-	else if ( commandData.command == CameraCommandData::SetThreadSleepDuration )
-	{
-		m_cameraSetupData.sleepDuration = commandData.parameter.As<long>();
+        evtCommandData.parameter = cameraInfo;
+    }
+    else if ( commandData.command == CameraCommandData::SetThreadSleepDuration )
+    {
+        m_cameraSetupData.sleepDuration = commandData.parameter.As<long>();
 
-        evtCommand.parameter = m_cameraSetupData.sleepDuration;
-	}
-	else if ( commandData.command == CameraCommandData::GetVCProp )
-	{
-		const CameraCommandData::VCPropCommandParameters params = commandData.parameter.As<CameraCommandData::VCPropCommandParameters>();
-		CameraCommandData::VCPropCommandParameters       evtParams;
+        evtCommandData.parameter = m_cameraSetupData.sleepDuration;
+    }
+    else if ( commandData.command == CameraCommandData::GetVCProp )
+    {
+        const CameraCommandData::VCPropCommandParameters params = commandData.parameter.As<CameraCommandData::VCPropCommandParameters>();
+        CameraCommandData::VCPropCommandParameters       evtParams;
 
-		for ( const auto& p: params )
-		{
-			CameraCommandData::VCPropCommandParameter evtParam;
+        for ( const auto& p: params )
+        {
+            CameraCommandData::VCPropCommandParameter evtParam;
 
-			evtParam.id = p.id;
-			evtParam.value = m_cameraCapture->get(p.id);
-			evtParams.push_back(evtParam);
-		}
-		evtCommand.parameter = evtParams;
-	}
-	else if ( commandData.command == CameraCommandData::SetVCProp )
-	{
-		const CameraCommandData::VCPropCommandParameters params = commandData.parameter.As<CameraCommandData::VCPropCommandParameters>();
-		CameraCommandData::VCPropCommandParameters       evtParams;
+            evtParam.id = p.id;
+            evtParam.value = m_cameraCapture->get(p.id);
+            evtParams.push_back(evtParam);
+        }
+        evtCommandData.parameter = evtParams;
+    }
+    else if ( commandData.command == CameraCommandData::SetVCProp )
+    {
+        const CameraCommandData::VCPropCommandParameters params = commandData.parameter.As<CameraCommandData::VCPropCommandParameters>();
+        CameraCommandData::VCPropCommandParameters       evtParams;
 
-		for ( const auto& p: params )
-		{
-			CameraCommandData::VCPropCommandParameter evtParam;
+        for ( const auto& p: params )
+        {
+            CameraCommandData::VCPropCommandParameter evtParam;
 
-			evtParam.id = p.id;
-			evtParam.value = p.value;
-			evtParam.succeeded = m_cameraCapture->set(p.id, p.value);
-			evtParams.push_back(evtParam);
-		}
-		evtCommand.parameter = evtParams;
-	}
-	else
-	{
-		wxFAIL_MSG("Invalid command");
-	}
+            evtParam.id = p.id;
+            evtParam.value = p.value;
+            evtParam.succeeded = m_cameraCapture->set(p.id, p.value);
+            evtParams.push_back(evtParam);
+        }
+        evtCommandData.parameter = evtParams;
+    }
+    else
+    {
+        wxFAIL_MSG("Invalid command");
+    }
 
-    evt->SetPayload(evtCommand);
-	m_cameraSetupData.eventSink->QueueEvent(evt);
+    evt->SetPayload(evtCommandData);
+    m_cameraSetupData.eventSink->QueueEvent(evt);
 }

@@ -132,7 +132,6 @@ CameraGridFrame::CameraGridFrame(wxWindow* parent) : wxFrame(parent, wxID_ANY, "
 
     wxLog::AddTraceMask(TRACE_WXOPENCVCAMERAS);
 
-
     CallAfter([] { wxMessageBox("When a camera thumbnail shows it is receiving, you can:\n (1) Double click it to show the full frame.\n (2) Right click it to communicate with the camera."); } );
 }
 
@@ -381,89 +380,91 @@ void CameraGridFrame::OnShowOneCameraFrame(wxMouseEvent& evt)
 
 wxString GetCVPropName(cv::VideoCaptureProperties prop)
 {
+    using namespace cv;
+
     wxString name;
 
     switch ( prop )
     {
-        case cv::CAP_PROP_POS_MSEC: name = "POS_MSEC"; break;
-        case cv::CAP_PROP_POS_FRAMES: name = "POS_FRAMES"; break;
-        case cv::CAP_PROP_POS_AVI_RATIO: name = "POS_AVI_RATIO"; break;
-        case cv::CAP_PROP_FRAME_WIDTH: name = "FRAME_WIDTH"; break;
-        case cv::CAP_PROP_FRAME_HEIGHT: name = "FRAME_HEIGHT"; break;
-        case cv::CAP_PROP_FPS: name = "FPS"; break;
-        case cv::CAP_PROP_FOURCC: name = "FOURCC"; break;
-        case cv::CAP_PROP_FRAME_COUNT: name = "FRAME_COUNT"; break;
-        case cv::CAP_PROP_FORMAT: name = "FORMAT"; break;
-        case cv::CAP_PROP_MODE: name = "MODE"; break;
-        case cv::CAP_PROP_BRIGHTNESS: name = "BRIGHTNESS"; break;
-        case cv::CAP_PROP_CONTRAST: name = "CONTRAST"; break;
-        case cv::CAP_PROP_SATURATION: name = "SATURATION"; break;
-        case cv::CAP_PROP_HUE: name = "HUE"; break;
-        case cv::CAP_PROP_GAIN: name = "GAIN"; break;
-        case cv::CAP_PROP_EXPOSURE: name = "EXPOSURE"; break;
-        case cv::CAP_PROP_CONVERT_RGB: name = "CONVERT_RGB"; break;
-        case cv::CAP_PROP_WHITE_BALANCE_BLUE_U: name = "WHITE_BALANCE_BLUE_U"; break;
-        case cv::CAP_PROP_RECTIFICATION: name = "RECTIFICATION"; break;
-        case cv::CAP_PROP_MONOCHROME: name = "MONOCHROME"; break;
-        case cv::CAP_PROP_SHARPNESS: name = "SHARPNESS"; break;
-        case cv::CAP_PROP_AUTO_EXPOSURE: name = "AUTO_EXPOSURE"; break;
-        case cv::CAP_PROP_GAMMA: name = "GAMMA"; break;
-        case cv::CAP_PROP_TEMPERATURE: name = "TEMPERATURE"; break;
-        case cv::CAP_PROP_TRIGGER: name = "TRIGGER"; break;
-        case cv::CAP_PROP_TRIGGER_DELAY: name = "TRIGGER_DELAY"; break;
-        case cv::CAP_PROP_WHITE_BALANCE_RED_V: name = "WHITE_BALANCE_RED_V"; break;
-        case cv::CAP_PROP_ZOOM: name = "ZOOM"; break;
-        case cv::CAP_PROP_FOCUS: name = "FOCUS"; break;
-        case cv::CAP_PROP_GUID: name = "GUID"; break;
-        case cv::CAP_PROP_ISO_SPEED: name = "ISO_SPEED"; break;
-        case cv::CAP_PROP_BACKLIGHT: name = "BACKLIGHT"; break;
-        case cv::CAP_PROP_PAN: name = "PAN"; break;
-        case cv::CAP_PROP_TILT: name = "TILT"; break;
-        case cv::CAP_PROP_ROLL: name = "ROLL"; break;
-        case cv::CAP_PROP_IRIS: name = "IRIS"; break;
-        case cv::CAP_PROP_SETTINGS: name = "SETTINGS"; break;
-        case cv::CAP_PROP_BUFFERSIZE: name = "BUFFERSIZE"; break;
-        case cv::CAP_PROP_AUTOFOCUS: name = "AUTOFOCUS"; break;
-        case cv::CAP_PROP_SAR_NUM: name = "SAR_NUM"; break;
-        case cv::CAP_PROP_SAR_DEN: name = "SAR_DEN"; break;
-        case cv::CAP_PROP_BACKEND: name = "BACKEND"; break;
-        case cv::CAP_PROP_CHANNEL: name = "CHANNEL"; break;
-        case cv::CAP_PROP_AUTO_WB: name = "AUTO_WB"; break;
-        case cv::CAP_PROP_WB_TEMPERATURE: name = "WB_TEMPERATURE"; break;
-        case cv::CAP_PROP_CODEC_PIXEL_FORMAT: name = "CODEC_PIXEL_FORMAT"; break;
+        case CAP_PROP_POS_MSEC: name = "POS_MSEC"; break;
+        case CAP_PROP_POS_FRAMES: name = "POS_FRAMES"; break;
+        case CAP_PROP_POS_AVI_RATIO: name = "POS_AVI_RATIO"; break;
+        case CAP_PROP_FRAME_WIDTH: name = "FRAME_WIDTH"; break;
+        case CAP_PROP_FRAME_HEIGHT: name = "FRAME_HEIGHT"; break;
+        case CAP_PROP_FPS: name = "FPS"; break;
+        case CAP_PROP_FOURCC: name = "FOURCC"; break;
+        case CAP_PROP_FRAME_COUNT: name = "FRAME_COUNT"; break;
+        case CAP_PROP_FORMAT: name = "FORMAT"; break;
+        case CAP_PROP_MODE: name = "MODE"; break;
+        case CAP_PROP_BRIGHTNESS: name = "BRIGHTNESS"; break;
+        case CAP_PROP_CONTRAST: name = "CONTRAST"; break;
+        case CAP_PROP_SATURATION: name = "SATURATION"; break;
+        case CAP_PROP_HUE: name = "HUE"; break;
+        case CAP_PROP_GAIN: name = "GAIN"; break;
+        case CAP_PROP_EXPOSURE: name = "EXPOSURE"; break;
+        case CAP_PROP_CONVERT_RGB: name = "CONVERT_RGB"; break;
+        case CAP_PROP_WHITE_BALANCE_BLUE_U: name = "WHITE_BALANCE_BLUE_U"; break;
+        case CAP_PROP_RECTIFICATION: name = "RECTIFICATION"; break;
+        case CAP_PROP_MONOCHROME: name = "MONOCHROME"; break;
+        case CAP_PROP_SHARPNESS: name = "SHARPNESS"; break;
+        case CAP_PROP_AUTO_EXPOSURE: name = "AUTO_EXPOSURE"; break;
+        case CAP_PROP_GAMMA: name = "GAMMA"; break;
+        case CAP_PROP_TEMPERATURE: name = "TEMPERATURE"; break;
+        case CAP_PROP_TRIGGER: name = "TRIGGER"; break;
+        case CAP_PROP_TRIGGER_DELAY: name = "TRIGGER_DELAY"; break;
+        case CAP_PROP_WHITE_BALANCE_RED_V: name = "WHITE_BALANCE_RED_V"; break;
+        case CAP_PROP_ZOOM: name = "ZOOM"; break;
+        case CAP_PROP_FOCUS: name = "FOCUS"; break;
+        case CAP_PROP_GUID: name = "GUID"; break;
+        case CAP_PROP_ISO_SPEED: name = "ISO_SPEED"; break;
+        case CAP_PROP_BACKLIGHT: name = "BACKLIGHT"; break;
+        case CAP_PROP_PAN: name = "PAN"; break;
+        case CAP_PROP_TILT: name = "TILT"; break;
+        case CAP_PROP_ROLL: name = "ROLL"; break;
+        case CAP_PROP_IRIS: name = "IRIS"; break;
+        case CAP_PROP_SETTINGS: name = "SETTINGS"; break;
+        case CAP_PROP_BUFFERSIZE: name = "BUFFERSIZE"; break;
+        case CAP_PROP_AUTOFOCUS: name = "AUTOFOCUS"; break;
+        case CAP_PROP_SAR_NUM: name = "SAR_NUM"; break;
+        case CAP_PROP_SAR_DEN: name = "SAR_DEN"; break;
+        case CAP_PROP_BACKEND: name = "BACKEND"; break;
+        case CAP_PROP_CHANNEL: name = "CHANNEL"; break;
+        case CAP_PROP_AUTO_WB: name = "AUTO_WB"; break;
+        case CAP_PROP_WB_TEMPERATURE: name = "WB_TEMPERATURE"; break;
+        case CAP_PROP_CODEC_PIXEL_FORMAT: name = "CODEC_PIXEL_FORMAT"; break;
 #if CHECK_OPENCV_VERSION(4,3,0)
-        case cv::CAP_PROP_BITRATE: name = "BITRATE"; break;
+        case CAP_PROP_BITRATE: name = "BITRATE"; break;
 #endif
 #if CHECK_OPENCV_VERSION(4,5,0)
-        case cv::CAP_PROP_ORIENTATION_META: name = "ORIENTATION_META"; break;
-        case cv::CAP_PROP_ORIENTATION_AUTO: name = "ORIENTATION_AUTO"; break;
+        case CAP_PROP_ORIENTATION_META: name = "ORIENTATION_META"; break;
+        case CAP_PROP_ORIENTATION_AUTO: name = "ORIENTATION_AUTO"; break;
 #endif
 #if CHECK_OPENCV_VERSION(4,5,2)
-        case cv::CAP_PROP_HW_ACCELERATION: name = "HW_ACCELERATION"; break;
-        case cv::CAP_PROP_HW_DEVICE: name = "HW_DEVICE"; break;
+        case CAP_PROP_HW_ACCELERATION: name = "HW_ACCELERATION"; break;
+        case CAP_PROP_HW_DEVICE: name = "HW_DEVICE"; break;
 #endif
 #if CHECK_OPENCV_VERSION(4,5,3)
-        case cv::CAP_PROP_HW_ACCELERATION_USE_OPENCL: name = "HW_ACCELERATION_USE_OPENCL"; break;
+        case CAP_PROP_HW_ACCELERATION_USE_OPENCL: name = "HW_ACCELERATION_USE_OPENCL"; break;
 #endif
 #if CHECK_OPENCV_VERSION(4,5,4)
-        case cv::CAP_PROP_OPEN_TIMEOUT_MSEC: name = "OPEN_TIMEOUT_MSEC"; break;
-        case cv::CAP_PROP_READ_TIMEOUT_MSEC: name = "READ_TIMEOUT_MSEC"; break;
-        case cv::CAP_PROP_STREAM_OPEN_TIME_USEC: name = "STREAM_OPEN_TIME_USEC"; break;
+        case CAP_PROP_OPEN_TIMEOUT_MSEC: name = "OPEN_TIMEOUT_MSEC"; break;
+        case CAP_PROP_READ_TIMEOUT_MSEC: name = "READ_TIMEOUT_MSEC"; break;
+        case CAP_PROP_STREAM_OPEN_TIME_USEC: name = "STREAM_OPEN_TIME_USEC"; break;
 #endif
 #if CHECK_OPENCV_VERSION(4,5,5)
-        case cv::CAP_PROP_VIDEO_TOTAL_CHANNELS: name = "VIDEO_TOTAL_CHANNELS"; break;
-        case cv::CAP_PROP_VIDEO_STREAM: name = "VIDEO_STREAM"; break;
-        case cv::CAP_PROP_AUDIO_STREAM: name = "AUDIO_STREAM"; break;
-        case cv::CAP_PROP_AUDIO_POS: name = "AUDIO_POS"; break;
-        case cv::CAP_PROP_AUDIO_SHIFT_NSEC: name = "AUDIO_SHIFT_NSEC"; break;
-        case cv::CAP_PROP_AUDIO_DATA_DEPTH: name = "AUDIO_DATA_DEPTH"; break;
-        case cv::CAP_PROP_AUDIO_SAMPLES_PER_SECOND: name = "AUDIO_SAMPLES_PER_SECOND"; break;
-        case cv::CAP_PROP_AUDIO_BASE_INDEX: name = "AUDIO_BASE_INDEX"; break;
-        case cv::CAP_PROP_AUDIO_TOTAL_CHANNELS: name = "AUDIO_TOTAL_CHANNELS"; break;
-        case cv::CAP_PROP_AUDIO_TOTAL_STREAMS: name = "AUDIO_TOTAL_STREAMS"; break;
-        case cv::CAP_PROP_AUDIO_SYNCHRONIZE: name = "AUDIO_SYNCHRONIZE"; break;
-        case cv::CAP_PROP_LRF_HAS_KEY_FRAME: name = "LRF_HAS_KEY_FRAME"; break;
-        case cv::CAP_PROP_CODEC_EXTRADATA_INDEX: name = "CODEC_EXTRADATA_INDEX"; break;
+        case CAP_PROP_VIDEO_TOTAL_CHANNELS: name = "VIDEO_TOTAL_CHANNELS"; break;
+        case CAP_PROP_VIDEO_STREAM: name = "VIDEO_STREAM"; break;
+        case CAP_PROP_AUDIO_STREAM: name = "AUDIO_STREAM"; break;
+        case CAP_PROP_AUDIO_POS: name = "AUDIO_POS"; break;
+        case CAP_PROP_AUDIO_SHIFT_NSEC: name = "AUDIO_SHIFT_NSEC"; break;
+        case CAP_PROP_AUDIO_DATA_DEPTH: name = "AUDIO_DATA_DEPTH"; break;
+        case CAP_PROP_AUDIO_SAMPLES_PER_SECOND: name = "AUDIO_SAMPLES_PER_SECOND"; break;
+        case CAP_PROP_AUDIO_BASE_INDEX: name = "AUDIO_BASE_INDEX"; break;
+        case CAP_PROP_AUDIO_TOTAL_CHANNELS: name = "AUDIO_TOTAL_CHANNELS"; break;
+        case CAP_PROP_AUDIO_TOTAL_STREAMS: name = "AUDIO_TOTAL_STREAMS"; break;
+        case CAP_PROP_AUDIO_SYNCHRONIZE: name = "AUDIO_SYNCHRONIZE"; break;
+        case CAP_PROP_LRF_HAS_KEY_FRAME: name = "LRF_HAS_KEY_FRAME"; break;
+        case CAP_PROP_CODEC_EXTRADATA_INDEX: name = "CODEC_EXTRADATA_INDEX"; break;
 #endif
     }
 
@@ -502,21 +503,21 @@ void CameraGridFrame::OnCameraContextMenu(wxContextMenuEvent& evt)
     if ( id == ID_CAMERA_GET_INFO )
     {
         commandData.command = CameraCommandData::GetCameraInfo;
-        it->second.commands->Post(commandData);
+        it->second.commandDatas->Post(commandData);
     }
     else if ( id == ID_CAMERA_SET_THREAD_SLEEP_DURATION )
     {
         long duration = wxGetNumberFromUser("Sleep duration in ms", "Number between 0 (no sleep) and 1000",
-            "Select default CameraThread sleep duration",
-            m_defaultCameraThreadSleepDurationInMs,
-            0, 1000, this);
+                                            "Select default CameraThread sleep duration",
+                                            m_defaultCameraThreadSleepDurationInMs,
+                                            0, 1000, this);
 
         if ( duration == -1 )
             return;
 
         commandData.command = CameraCommandData::SetThreadSleepDuration;
         commandData.parameter = duration;
-        it->second.commands->Post(commandData);
+        it->second.commandDatas->Post(commandData);
     }
     else if ( id == ID_CAMERA_GET_VCPROP )
     {
@@ -534,7 +535,7 @@ void CameraGridFrame::OnCameraContextMenu(wxContextMenuEvent& evt)
         params.push_back(param);
         commandData.parameter = params;
 
-        it->second.commands->Post(commandData);
+        it->second.commandDatas->Post(commandData);
     }
     else if ( id == ID_CAMERA_SET_VCPROP )
     {
@@ -567,7 +568,7 @@ void CameraGridFrame::OnCameraContextMenu(wxContextMenuEvent& evt)
         params.push_back(param);
         commandData.parameter = params;
 
-        it->second.commands->Post(commandData);
+        it->second.commandDatas->Post(commandData);
     }
     else
     {
@@ -634,7 +635,7 @@ void CameraGridFrame::AddCamera(const wxString& address)
     GetSizer()->Add(cameraView.thumbnailPanel, wxSizerFlags().Border());
     Layout();
 
-	cameraView.commands = cameraInitData.commands;
+    cameraView.commandDatas = cameraInitData.commands;
 
     m_cameras[cameraName] = cameraView;
 
@@ -663,7 +664,7 @@ void CameraGridFrame::RemoveCamera(const wxString& cameraName)
         wxLogTrace(TRACE_WXOPENCVCAMERAS, "Closed OneCameraFrame for camera '%s'.", cameraName);
     }
 
-	delete it->second.commands;
+    delete it->second.commandDatas;
 
     m_cameras.erase(it);
     Layout();

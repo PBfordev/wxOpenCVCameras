@@ -56,9 +56,9 @@ private:
 
     struct CameraView
     {
-        CameraThread*   thread{nullptr};
-        CameraPanel*    thumbnailPanel{nullptr};
-		CameraCommandDatas* commands{nullptr};
+        CameraThread*       thread{nullptr};
+        CameraPanel*        thumbnailPanel{nullptr};
+        CameraCommandDatas* commandDatas{nullptr};
     };
 
     // default timer interval in ms for processing new camera frame data from worker threads

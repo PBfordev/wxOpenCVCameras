@@ -41,7 +41,7 @@ struct CameraCommandData
         bool   succeeded{false};
     };
     // for setting/getting multiple properties at once
-	typedef std::vector<VCPropCommandParameter> VCPropCommandParameters;
+    typedef std::vector<VCPropCommandParameter> VCPropCommandParameters;
 
     struct CameraInfo
     {
@@ -94,14 +94,14 @@ public:
 
     wxEvent* Clone() const override { return new CameraEvent(*this); }
 protected:
-    wxString    m_cameraName;
+    wxString m_cameraName;
 };
 
 // Camera capture started
 // VideoCapture's backend can be retrieved via event's GetString(),
 // camera fps can be retrieved via event's GetInt(), if it returns non-zero
 wxDECLARE_EVENT(EVT_CAMERA_CAPTURE_STARTED, CameraEvent);
-// Result of the CameraCommand::GetXXX command sent to camera, use GetCommandResult()
+// Result of the CameraCommandData's command sent to camera, use GetCommandResult()
 wxDECLARE_EVENT(EVT_CAMERA_COMMAND_RESULT, CameraEvent);
 // Could not open OpenCV camera capture
 wxDECLARE_EVENT(EVT_CAMERA_ERROR_OPEN, CameraEvent);
@@ -202,16 +202,16 @@ struct CameraSetupData
     int                  defaultFPS{25}; // when the camera FPS cannot be retrieved
     bool                 useMJPGFourCC{false};
 
-	// where to send EVT_CAMERA_xxx events;
+    // where to send EVT_CAMERA_xxx events;
     wxEvtHandler*        eventSink{nullptr};
     // new frames captured from camera, to be processed by the GUI thread
-	CameraFrameDataPtrs* frames{nullptr};
+    CameraFrameDataPtrs* frames{nullptr};
     wxCriticalSection*   framesCS{nullptr};
     wxSize               frameSize; // if width or height is 0, not set
     wxSize               thumbnailSize;
 
-	// commands send from the GUI thread to camera thread
-	CameraCommandDatas*		 commands{nullptr};
+    // commands sent from the GUI thread to camera thread
+    CameraCommandDatas*  commands{nullptr};
 
     bool IsOk() const;
 };
@@ -252,7 +252,7 @@ protected:
     void SetCameraUseMJPEG();
     void SetCameraFPS(const int FPS);
 
-	void ProcessCameraCommand(const CameraCommandData& commandData);
+    void ProcessCameraCommand(const CameraCommandData& commandData);
 };
 
 #endif // #ifndef CAMERATHREAD_H
