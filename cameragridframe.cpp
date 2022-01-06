@@ -59,7 +59,7 @@ CameraGridFrame::CameraGridFrame(wxWindow* parent) : wxFrame(parent, wxID_ANY, "
     addOrRemovecameraMenu->Append(wxID_FILE6, "Add ABC Live");
     addOrRemovecameraMenu->Append(ID_CAMERA_ADD_ALL_IP_ABOVE, "Add All IP Cameras Above\tCtrl+A");
     addOrRemovecameraMenu->AppendSeparator();
-    addOrRemovecameraMenu->Append(ID_CAMERA_ADD_ALL_DOLBYVISIONHLS, "Add DolbyVision HLS (4k at 60fps)");
+    addOrRemovecameraMenu->Append(ID_CAMERA_ADD_DOLBYVISIONHLS, "Add DolbyVision HLS (4k at 60fps)");
     addOrRemovecameraMenu->AppendSeparator();
     addOrRemovecameraMenu->Append(ID_CAMERA_REMOVE, "Remove...");
     addOrRemovecameraMenu->Append(ID_CAMERA_REMOVE_ALL, "&Remove All\tCtrl+R");
@@ -101,7 +101,7 @@ CameraGridFrame::CameraGridFrame(wxWindow* parent) : wxFrame(parent, wxID_ANY, "
     Bind(wxEVT_MENU, [this](wxCommandEvent&) { AddCamera(knownCameraAdresses[4]); }, wxID_FILE5);
     Bind(wxEVT_MENU, [this](wxCommandEvent&) { AddCamera(knownCameraAdresses[5]); }, wxID_FILE6);
     Bind(wxEVT_MENU, &CameraGridFrame::OnAddAllIPCamerasAbove, this, ID_CAMERA_ADD_ALL_IP_ABOVE);
-    Bind(wxEVT_MENU, [this](wxCommandEvent&) { AddCamera("http://d3rlna7iyyu8wu.cloudfront.net/DolbyVision_Atmos/profile5_HLS/master.m3u8"); }, ID_CAMERA_ADD_ALL_DOLBYVISIONHLS);
+    Bind(wxEVT_MENU, [this](wxCommandEvent&) { AddCamera("http://d3rlna7iyyu8wu.cloudfront.net/DolbyVision_Atmos/profile5_HLS/master.m3u8"); }, ID_CAMERA_ADD_DOLBYVISIONHLS);
 
     Bind(wxEVT_MENU, &CameraGridFrame::OnRemoveCamera, this, ID_CAMERA_REMOVE);
     Bind(wxEVT_MENU, &CameraGridFrame::OnRemoveAllCameras, this, ID_CAMERA_REMOVE_ALL);
@@ -199,17 +199,17 @@ void CameraGridFrame::OnSetCameraDefaultBackend(wxCommandEvent&)
     const std::vector<VideoCaptureAPIs> vcCameraAPIs = videoio_registry::getCameraBackends();
     const std::vector<VideoCaptureAPIs> vcStreamAPIs = videoio_registry::getStreamBackends();
     wxArrayString APINames;
-    std::vector<wxString> APIIds;
+    std::vector<VideoCaptureAPIs> APIIds;
     int initialSelection = -1;
     int selectedIndex = -1;
 
     APINames.push_back("<Default>");
-    APIIds.push_back(wxString::Format("%ld", CAP_ANY));
+    APIIds.push_back(CAP_ANY);
 
     for ( const auto& api : vcCameraAPIs )
     {
         APINames.push_back(videoio_registry::getBackendName(api));
-        APIIds.push_back(wxString::Format("%ld", static_cast<long>(api)));
+        APIIds.push_back(api);
     }
 
     for ( const auto& api : vcStreamAPIs )
@@ -220,12 +220,12 @@ void CameraGridFrame::OnSetCameraDefaultBackend(wxCommandEvent&)
             continue;
 
         APINames.push_back(name);
-        APIIds.push_back(wxString::Format("%ld", static_cast<long>(api)));
+        APIIds.push_back(api);
     }
 
     for ( size_t i = 0; i < APIIds.size(); ++i )
     {
-        if ( wxAtoi(APIIds[i]) == m_defaultCameraBackend )
+        if ( APIIds[i] == m_defaultCameraBackend )
         {
             initialSelection = i;
             break;
@@ -237,7 +237,7 @@ void CameraGridFrame::OnSetCameraDefaultBackend(wxCommandEvent&)
     if ( selectedIndex == -1 )
         return;
 
-    APIIds[selectedIndex].ToCLong(&m_defaultCameraBackend);
+    m_defaultCameraBackend = APIIds[selectedIndex];
 }
 
 

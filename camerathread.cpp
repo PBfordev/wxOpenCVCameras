@@ -323,7 +323,9 @@ void CameraThread::ProcessCameraCommand(const CameraCommandData& commandData)
     }
     else
     {
+        delete evt;
         wxFAIL_MSG("Invalid command");
+        return;
     }
 
     evt->SetPayload(evtCommandData);
