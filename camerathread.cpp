@@ -108,7 +108,7 @@ wxThread::ExitCode CameraThread::Entry()
         SetCameraResolution(m_cameraSetupData.frameSize);
     if ( m_cameraSetupData.useMJPGFourCC )
         SetCameraUseMJPEG();
-    if ( m_cameraSetupData.FPS )
+    if ( m_cameraSetupData.FPS > 0 )
         SetCameraFPS(m_cameraSetupData.FPS);
 
     m_cameraSetupData.FPS = m_cameraCapture->get(static_cast<int>(cv::CAP_PROP_FPS));
@@ -132,7 +132,7 @@ wxThread::ExitCode CameraThread::Entry()
             if ( m_cameraSetupData.commands->ReceiveTimeout(0, commandData) == wxMSGQUEUE_NO_ERROR )
                 ProcessCameraCommand(commandData);
 
-            if ( m_cameraSetupData.FPS != 0 )
+            if ( m_cameraSetupData.FPS > 0 )
                 msPerFrame = 1000 / m_cameraSetupData.FPS;
             else
                 msPerFrame = 1000 / m_cameraSetupData.defaultFPS;
@@ -258,7 +258,7 @@ void CameraThread::SetCameraUseMJPEG()
 
 void CameraThread::SetCameraFPS(const int FPS)
 {
-    if ( m_cameraCapture->set(cv::CAP_PROP_FPS, m_cameraSetupData.FPS) )
+    if ( m_cameraCapture->set(cv::CAP_PROP_FPS, FPS) )
         wxLogTrace(TRACE_WXOPENCVCAMERAS, "Set FPS to %d for camera '%s'", FPS, GetCameraName());
     else
         wxLogTrace(TRACE_WXOPENCVCAMERAS, "Could not set FPS to %d for camera '%s'", FPS, GetCameraName());
