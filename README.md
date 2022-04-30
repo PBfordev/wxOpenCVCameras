@@ -44,6 +44,13 @@ In the debug build, various diagnostic messages are output with `wxLogTrace(TRAC
 
 Notes
 ---------
+wxOpenCVCameras uses internet streams as camera sources. If an application connects to multiple
+hardware cameras with the same parameters, an entirely different approach should probably be used.
+For example, a single worker thread for capturing from all the cameras, using `cv::VideoCapture::waitAny()`
+with `cv::VideoCapture::retrieve()` and one or more worker threads for processing the captured
+images. Such approach would be not only less thread-hungry, the frames from multiple cameras
+should be better synchronized as well.
+
 To convert `cv::Mat` to `wxBitmap`, the code uses `ConvertMatBitmapTowxBitmap()` from the
 [wxOpenCVTest project](https://github.com/PBfordev/wxopencvtest), so all the information
 provided there applies here is as well.
