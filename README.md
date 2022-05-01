@@ -5,6 +5,8 @@ wxOpenCVCameras is a crude untested example of how to retrieve and display
 images from multiple cameras, using OpenCV to grab images from a camera
 and wxWidgets to display the images.
 
+![wxOpenCVCameras Screenshot](screenshots/wxopencvcameras.png?raw=true)
+
 Every camera has its own worker thread `CameraThread`, which grabs a frame
 from a camera with `cv::VideoCapture`, converts the frame from `cv::Mat`
 to `wxBitmap`, and creates a resized thumbnail also converted to `wxBitmap`.
