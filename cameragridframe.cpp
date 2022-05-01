@@ -650,7 +650,7 @@ void CameraGridFrame::RemoveCamera(const wxString& cameraName)
     wxCHECK_RET(it != m_cameras.end(), wxString::Format("Camera '%s' not found, could not be deleted.", cameraName));
 
     wxLogTrace(TRACE_WXOPENCVCAMERAS, "Removing camera '%s'...", cameraName);
-    it->second.thread->Delete();
+    it->second.thread->Delete(nullptr, wxTHREAD_WAIT_BLOCK);
     delete it->second.thread;
 
     GetSizer()->Detach(it->second.thumbnailPanel);
